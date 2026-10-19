@@ -1,2 +1,6 @@
-/mvnw text eol=lf
+# Tutti i file di testo nella repo usano LF
+* text=auto eol=lf
+
+# Gli script Windows devono restare CRLF
 *.cmd text eol=crlf
+*.bat text eol=crlf
