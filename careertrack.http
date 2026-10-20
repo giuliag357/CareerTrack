@@ -1,17 +1,70 @@
-### Recupera tutte le candidature
-GET http://localhost:8080/api/applications
+@baseUrl = http://localhost:8080/api/applications
 
-### Recupera la candidatura con id 1
-GET http://localhost:8080/api/applications/1
-
-### Crea una candidatura
-POST http://localhost:8080/api/applications
+### 1. Crea una candidatura (atteso: 201 Created)
+POST {{baseUrl}}
 Content-Type: application/json
 
 {
-  "company": "Google",
-  "position": "Junior Software Engineer",
-  "jobUrl": "https://careers.google.com/",
+  "company": "Acme S.p.A.",
+  "position": "Junior Backend Developer",
+  "jobUrl": "https://example.com/jobs/123",
+  "description": "Cerchiamo uno sviluppatore Java con conoscenze di Spring Boot e PostgreSQL...",
+  "location": "Vicenza",
+  "workMode": "HYBRID",
   "status": "APPLIED",
-  "applicationDate": "2026-10-19"
+  "applicationDate": "2026-10-20",
+  "notes": "Candidatura inviata tramite LinkedIn"
 }
+
+> {%
+    client.global.set("applicationId", response.body.id);
+%}
+
+### 2. Elenco di tutte le candidature (atteso: 200 OK)
+GET {{baseUrl}}
+
+### 3. Dettaglio della candidatura appena creata (atteso: 200 OK)
+GET {{baseUrl}}/{{applicationId}}
+
+### 4. Modifica: passa allo stato INTERVIEW (atteso: 200 OK)
+PUT {{baseUrl}}/{{applicationId}}
+Content-Type: application/json
+
+{
+  "company": "Acme S.p.A.",
+  "position": "Junior Backend Developer",
+  "location": "Vicenza",
+  "workMode": "HYBRID",
+  "status": "INTERVIEW",
+  "applicationDate": "2026-10-20",
+  "notes": "Primo colloquio fissato!"
+}
+
+### 5. Errore di validazione (atteso: 400 Bad Request)
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "company": "",
+  "position": "Tester",
+  "applicationDate": "2099-01-01"
+}
+
+### 6. Valore non valido per un enum (atteso: 400 Bad Request)
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "company": "Acme",
+  "position": "Tester",
+  "workMode": "SMART"
+}
+
+### 7. Id inesistente (atteso: 404 Not Found)
+GET {{baseUrl}}/999999
+
+### 8. Elimina la candidatura (atteso: 204 No Content)
+DELETE {{baseUrl}}/{{applicationId}}
+
+### 9. Dopo l'eliminazione non c'è più (atteso: 404 Not Found)
+GET {{baseUrl}}/{{applicationId}}

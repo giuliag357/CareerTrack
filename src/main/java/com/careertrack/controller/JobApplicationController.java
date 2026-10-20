@@ -1,46 +1,61 @@
 package com.careertrack.controller;
 
-import com.careertrack.entity.JobApplication;
-import com.careertrack.repository.JobApplicationRepository;
-
+import com.careertrack.dto.JobApplicationRequest;
+import com.careertrack.dto.JobApplicationResponse;
+import com.careertrack.service.JobApplicationService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/applications")
 public class JobApplicationController {
 
-    private final JobApplicationRepository repository;
+    private final JobApplicationService service;
 
-    public JobApplicationController(
-            JobApplicationRepository repository) {
-        this.repository = repository;
+    public JobApplicationController(JobApplicationService service) {
+        this.service = service;
     }
-
-    // Recupera tutte le candidature
+    // GET /api/applications -> elenco di tutte le candidature
     @GetMapping
-    public List<JobApplication> getAllApplications() {
-        return repository.findAll();
+    public List<JobApplicationResponse> getAll() {
+        return service.findAll();
     }
 
-    // Recupera una candidatura tramite ID
+    // GET /api/applications/{id} -> una candidatura (oppure 404)
     @GetMapping("/{id}")
-    public ResponseEntity<JobApplication> getApplicationById(
-            @PathVariable Long id) {
-
-        return repository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public JobApplicationResponse getById(@PathVariable Long id) {
+        return service.findById(id);
     }
 
-    // Crea una nuova candidatura
+    // POST /api/applications -> crea una candidatura (201 + header Location)
     @PostMapping
-    public JobApplication createApplication(
-            @RequestBody JobApplication application) {
+    public ResponseEntity<JobApplicationResponse> create(
+            @Valid @RequestBody JobApplicationRequest request) {
 
-        return repository.save(application);
+        JobApplicationResponse created = service.create(request);
+        URI location = URI.create("/api/applications/" + created.id());
+        return ResponseEntity.created(location).body(created);
+    }
+
+    // PUT /api/applications/{id} -> modifica una candidatura
+    @PutMapping("/{id}")
+    public JobApplicationResponse update(
+            @PathVariable Long id,
+            @Valid @RequestBody JobApplicationRequest request) {
+
+        return service.update(id, request);
+    }
+
+    // DELETE /api/applications/{id} -> elimina una candidatura (204)
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 
 }
