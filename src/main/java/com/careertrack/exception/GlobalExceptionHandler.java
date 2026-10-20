@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
@@ -36,7 +37,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
         // Raccoglie gli errori nella forma: nome del campo -> messaggio
         Map<String, String> errors = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+                errors.putIfAbsent(
+                        error.getField(),
+                        Objects.requireNonNullElse(error.getDefaultMessage(), "Valore non valido")));
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST, "Alcuni campi non sono validi");
