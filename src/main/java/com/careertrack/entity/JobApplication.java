@@ -41,6 +41,10 @@ public class JobApplication {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -137,5 +141,13 @@ public class JobApplication {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

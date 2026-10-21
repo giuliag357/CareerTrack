@@ -1,0 +1,96 @@
+@baseUrl = http://localhost:8080/api/auth
+
+### 1. Registrazione (atteso: 201 Created)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "giulia@example.com",
+  "name": "Giulia",
+  "password": "password-sicura-123"
+}
+
+### 2. Stessa email, scritta in modo diverso (atteso: 409 Conflict)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "  Giulia@Example.com ",
+  "name": "Giulia bis",
+  "password": "un-altra-password"
+}
+
+### 3. Dati non validi (atteso: 400 Bad Request)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "non-una-email",
+  "name": "",
+  "password": "corta"
+}
+
+### 4. Secondo utente con la STESSA password del primo (atteso: 201 Created)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "mario@example.com",
+  "name": "Mario",
+  "password": "password-sicura-123"
+}
+
+### 5. Login (atteso: 200 OK, con il token)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "giulia@example.com",
+  "password": "password-sicura-123"
+}
+
+> {%
+    client.global.set("token", response.body.accessToken);
+%}
+
+### 6. Login con password sbagliata (atteso: 401)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "giulia@example.com",
+  "password": "password-sbagliata"
+}
+
+### 7. Login con email inesistente (atteso: 401, STESSO messaggio della 6)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "nessuno@example.com",
+  "password": "password-sicura-123"
+}
+
+### 8. Chi sono? (atteso: 200 OK)
+GET {{baseUrl}}/me
+Authorization: Bearer {{token}}
+
+### 9. Senza token (atteso: 401)
+GET {{baseUrl}}/me
+
+### 10. Token manomesso: aggiungiamo una lettera in fondo (atteso: 401)
+GET {{baseUrl}}/me
+Authorization: Bearer {{token}}
+
+### 11. Login di Mario (atteso: 200 OK)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "mario@example.com",
+  "password": "password-sicura-123"
+}
+
+> {%
+    client.global.set("tokenMario", response.body.accessToken);
+%}

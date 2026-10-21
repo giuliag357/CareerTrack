@@ -2,6 +2,7 @@ package com.careertrack.controller;
 
 import com.careertrack.dto.JobApplicationRequest;
 import com.careertrack.dto.JobApplicationResponse;
+import com.careertrack.security.CurrentUserId;
 import com.careertrack.service.JobApplicationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -20,42 +21,41 @@ public class JobApplicationController {
     public JobApplicationController(JobApplicationService service) {
         this.service = service;
     }
-    // GET /api/applications -> elenco di tutte le candidature
+
     @GetMapping
-    public List<JobApplicationResponse> getAll() {
-        return service.findAll();
+    public List<JobApplicationResponse> getAll(@CurrentUserId Long userId) {
+        return service.findAll(userId);
     }
 
-    // GET /api/applications/{id} -> una candidatura (oppure 404)
     @GetMapping("/{id}")
-    public JobApplicationResponse getById(@PathVariable Long id) {
-        return service.findById(id);
+    public JobApplicationResponse getById(@CurrentUserId Long userId,
+                                          @PathVariable Long id) {
+        return service.findById(userId, id);
     }
 
-    // POST /api/applications -> crea una candidatura (201 + header Location)
     @PostMapping
     public ResponseEntity<JobApplicationResponse> create(
+            @CurrentUserId Long userId,
             @Valid @RequestBody JobApplicationRequest request) {
 
-        JobApplicationResponse created = service.create(request);
+        JobApplicationResponse created = service.create(userId, request);
         URI location = URI.create("/api/applications/" + created.id());
         return ResponseEntity.created(location).body(created);
     }
 
-    // PUT /api/applications/{id} -> modifica una candidatura
     @PutMapping("/{id}")
     public JobApplicationResponse update(
+            @CurrentUserId Long userId,
             @PathVariable Long id,
             @Valid @RequestBody JobApplicationRequest request) {
 
-        return service.update(id, request);
+        return service.update(userId, id, request);
     }
 
-    // DELETE /api/applications/{id} -> elimina una candidatura (204)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public void delete(@CurrentUserId Long userId,
+                       @PathVariable Long id) {
+        service.delete(userId, id);
     }
-
 }

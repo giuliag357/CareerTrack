@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.LinkedHashMap;
@@ -23,6 +24,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Risorsa non trovata");
+        return problem;
+    }
+
+    // 409: esiste già un utente con questa email
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ProblemDetail handleEmailAlreadyUsed(EmailAlreadyUsedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Email già in uso");
+        return problem;
+    }
+
+    // 401: email o password sbagliate
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthentication(AuthenticationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Email o password non validi");
+        problem.setTitle("Autenticazione fallita");
         return problem;
     }
 

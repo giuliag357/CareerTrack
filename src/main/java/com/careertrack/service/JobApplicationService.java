@@ -5,6 +5,7 @@ import com.careertrack.dto.JobApplicationResponse;
 import com.careertrack.entity.JobApplication;
 import com.careertrack.exception.ApplicationNotFoundException;
 import com.careertrack.repository.JobApplicationRepository;
+import com.careertrack.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,59 +14,61 @@ import java.util.List;
 @Service
 @Transactional
 public class JobApplicationService {
-    private final JobApplicationRepository repository;
 
-    public JobApplicationService(JobApplicationRepository repository) {
+    private final JobApplicationRepository repository;
+    private final UserRepository userRepository;
+
+    public JobApplicationService(JobApplicationRepository repository,
+                                 UserRepository userRepository) {
         this.repository = repository;
+        this.userRepository = userRepository;
     }
 
-    // Restituisce tutte le candidature
+    // Tutte le candidature dell'utente, dalla più recente
     @Transactional(readOnly = true)
-    public List<JobApplicationResponse> findAll() {
-        return repository.findAll()
+    public List<JobApplicationResponse> findAll(Long userId) {
+        return repository.findAllByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(JobApplicationResponse::from)
                 .toList();
     }
 
-    // Restituisce una candidatura tramite id, oppure lancia 404
+    // Una candidatura, solo se appartiene all'utente
     @Transactional(readOnly = true)
-    public JobApplicationResponse findById(Long id) {
-        return JobApplicationResponse.from(getOrThrow(id));
+    public JobApplicationResponse findById(Long userId, Long id) {
+        return JobApplicationResponse.from(getOrThrow(userId, id));
     }
 
-    // Crea una nuova candidatura
-    public JobApplicationResponse create(JobApplicationRequest request) {
+    // Crea una candidatura che appartiene all'utente
+    public JobApplicationResponse create(Long userId, JobApplicationRequest request) {
         JobApplication application = new JobApplication();
         applyRequest(application, request);
+        application.setUser(userRepository.getReferenceById(userId));
         JobApplication saved = repository.save(application);
         return JobApplicationResponse.from(saved);
     }
 
-    // Modifica una candidatura esistente
-    public JobApplicationResponse update(Long id, JobApplicationRequest request) {
-        JobApplication application = getOrThrow(id);
+    // Modifica una candidatura, solo se appartiene all'utente
+    public JobApplicationResponse update(Long userId, Long id, JobApplicationRequest request) {
+        JobApplication application = getOrThrow(userId, id);
         applyRequest(application, request);
         JobApplication saved = repository.saveAndFlush(application);
         return JobApplicationResponse.from(saved);
     }
 
-    // Elimina una candidatura
-    public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new ApplicationNotFoundException(id);
-        }
-        repository.deleteById(id);
+    // Elimina una candidatura, solo se appartiene all'utente
+    public void delete(Long userId, Long id) {
+        repository.delete(getOrThrow(userId, id));
     }
 
     // --- Metodi di supporto (privati) ---
 
-    private JobApplication getOrThrow(Long id) {
-        return repository.findById(id)
+    // Se la candidatura non esiste O appartiene a un altro utente: 404
+    private JobApplication getOrThrow(Long userId, Long id) {
+        return repository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ApplicationNotFoundException(id));
     }
 
-    // Copia i dati dalla richiesta all'entity
     private void applyRequest(JobApplication application, JobApplicationRequest request) {
         application.setCompany(request.company());
         application.setPosition(request.position());
@@ -76,8 +79,6 @@ public class JobApplicationService {
         application.setApplicationDate(request.applicationDate());
         application.setNotes(request.notes());
 
-        // Se lo stato non viene indicato, resta quello attuale
-        // (per una nuova candidatura: TO_APPLY)
         if (request.status() != null) {
             application.setStatus(request.status());
         }
